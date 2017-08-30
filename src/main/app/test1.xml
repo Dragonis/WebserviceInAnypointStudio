@@ -15,7 +15,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
-    <http:listener-config name="HTTP_Listener_Configuration_on_port_8081" host="localhost" port="8081" doc:name="HTTP Listener Configuration"/>
+    <http:listener-config name="HTTP_Listener_Configuration_on_port_8081" host="localhost" port="${http.port}" doc:name="HTTP Listener Configuration"/>
      <http:listener-config name="HTTP_Listener_Configuration2_on_port_8082" host="localhost" port="8082" doc:name="HTTP Listener Configuration"/>
 
     <db:oracle-config name="Oracle_Configuration" host="10.0.31.11" port="1521" instance="odev11" user="praktyka" password="praktyka" doc:name="Oracle Configuration"/>
@@ -31,12 +31,13 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
         <set-payload value="#[message.inboundProperties.'http.uri.params'.paramname]" doc:name="Set Payload"/>
         <custom-transformer class="test1.KeyTransformer" doc:name="Java"/>
         <echo-component doc:name="Echo"/>
-        <logger message="You are log in on website: #[message.inboundProperties.'http.request.path'] and port #[message.inboundProperties.'host']" level="INFO" doc:name="Logger"/>
+        <logger message="You are log in on website: #[message.inboundProperties.'http.request.path']" level="INFO" doc:name="Logger"/>
     </flow>
-    <flow name="localhost:8081/db/">
-        <http:listener config-ref="HTTP_Listener_Configuration_on_port_8081" path="/db/" allowedMethods="GET" doc:name="HTTP"/>
+    <flow name="http://localhost:8081/db/pracownicy?name=jan">
+        <http:listener config-ref="HTTP_Listener_Configuration_on_port_8081" path="db/pracownicy" allowedMethods="GET" doc:name="HTTP"/>
+        <set-variable variableName="name" value="#[message.inboundProperties.'http.query.params'.name]" doc:name="Variable"/>
         <db:select config-ref="Oracle_Configuration" doc:name="Database">
-            <db:parameterized-query><![CDATA[SELECT * FROM PRACOWNICY]]></db:parameterized-query>
+            <db:dynamic-query><![CDATA[SELECT * FROM PRACOWNICY WHERE IMIE = '#[flowVars.name]']]></db:dynamic-query>
         </db:select>
         <dw:transform-message doc:name="Transform Message">
             <dw:set-payload><![CDATA[%dw 1.0
@@ -59,7 +60,7 @@ pracownicy: payload map {
         <invoke object-ref="InvokeSpringBean" method="methodB" doc:name="Invoke Spring Bean" methodArguments="#[message.inboundProperties.'http.query.params'.['text']]"/>
         <echo-component doc:name="Echo"/>
     </flow>
-        <flow name="localhost:8081/download/file" >
+        <flow name="localhost:8081/download/file (zeby sciagac pliki z servera, to trzeba sciagac z FTP)" >
         <http:listener config-ref="HTTP_Listener_Configuration_on_port_8081" path="/download/{filename}" doc:name="HTTP"/>
         <set-payload value="#[message.inboundProperties.'http.uri.params'.filename]" doc:name="Set Payload"/>
         <file:outbound-endpoint path="E:\" outputPattern="#[message.inboundProperties.'http.uri.params'.filename].txt" responseTimeout="10000" doc:name="File"/>
@@ -70,7 +71,7 @@ pracownicy: payload map {
         <set-payload value="#[message.inboundProperties.'http.uri.params'.paramname]" doc:name="Set Payload"/>
         <custom-transformer class="test1.KeyTransformer" doc:name="Java"/>
         <echo-component doc:name="Echo"/>
-        <logger message="You are log in on website: #[message.inboundProperties.'http.request.path'] and port #[message.inboundProperties.'host']" level="INFO" doc:name="Logger"/>
+        <logger message="You are log in on website: #[message.inboundProperties.'http.request.path']" level="INFO" doc:name="Logger"/>
     </flow>
    
     
